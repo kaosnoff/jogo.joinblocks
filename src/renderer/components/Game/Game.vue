@@ -31,6 +31,9 @@
 				<p>Last lastInteraction: {{lastInteraction}}</p>
 			</div>
 		</div>
+		<div class="container">
+			<pre>{{blocos}}</pre>
+		</div>
 	</div>
 </template>
 
@@ -45,8 +48,8 @@
 		data: function ()
 		{
 			return {
-				minN: 10,
-				rangeN: 2,
+				minN: 1,
+				rangeN: 5,
 				newBlock: null,
 				cols: [0,1,2,3,4],
 				rows: [
@@ -75,6 +78,16 @@
 				}
 			}
 			this.createBlock();
+			setInterval(
+				()=>{
+					this.checaTabuleiro();
+				},
+				1000
+			);
+		},
+		mounted()
+		{
+			//this.testaBlocos();
 		},
 		methods: {
 			clicaColuna(n)
@@ -88,10 +101,11 @@
 				setTimeout(()=>
 					{
 						bloco.linha = blocosColuna.length;
-						console.log(bloco.linha);
+						//console.log(bloco.linha);
 						this.checaVizinhos(bloco).then(vizinhos =>
 						{
-							this.checaTabuleiro();
+							//this.checaTabuleiro();
+							//this.checaTabuleiro();
 						})
 					},50
 				);
@@ -163,7 +177,7 @@
 								if (vizinho.linha == (bloco.linha - 1))
 								{
 									//vizinho.linha += 1;
-									setTimeout(()=>{bloco.linha -= 1;},300);
+									bloco.linha -= 1;
 								}
 								else
 								{
@@ -191,7 +205,7 @@
 						
 						bloco.valor = valor;
 					}
-					resolve(vizinhos);
+					setTimeout(() => resolve(vizinhos), 500);
 				});
 			},
 			checaTabuleiro()
@@ -200,26 +214,47 @@
 				for (let i = 0; i < 4; i++)
 				{
 					items = this.getColuna(i);
+					//console.log(i, items);
 					if (!items || items.length < 1) continue;
 					let linhaAtual = 0;
 					for (let item of items)
 					{
-						console.log(item,item.linha, linhaAtual);
+						//console.log(item,item.linha, linhaAtual);
 						if (item.linha > linhaAtual)
 						{
 							item.linha = linhaAtual;
 						}
 						linhaAtual++;
 					}
-					for (let item in items)
+					let promises = [];
+					for (let item of items)
 					{
-						this.checaVizinhos(item);
+						//console.log(item)
+						promises.push(this.checaVizinhos(item));
 					}
+					Promise.all(promises).then(vizinhos =>
+					{
+						//console.log(vizinhos);
+						//this.checaTabuleiro();
+					})
+				}
+			},
+			testaBlocos()
+			{
+				for (let i = 34; i > -1; i--)
+				{
+					let bloco = new Bloco();
+					bloco.valor = i;
+					bloco.id = i;
+					console.log(bloco.valor);
+					this.newBlock = bloco;
+					this.clicaColuna(i%5);
 				}
 			},
 			terminaJogo()
 			{
 				console.log('Final!');
+				this.limpaJogo();
 			},
 			limpaJogo()
 			{
