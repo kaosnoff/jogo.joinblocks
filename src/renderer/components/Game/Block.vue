@@ -3,6 +3,7 @@
 		<span class="label">
 			{{label}}
 		</span>
+		<div>{{bloco.coluna}}; {{bloco.linha}}</div>
   </div>
 </template>
 
@@ -43,18 +44,17 @@
   export default {
     name: 'block',
 		props: [
-			'valor',
+			'bloco',
 		],
 		data: function()
 		{
 			return {
-				valorFull: 2
 			}
 		},
 		computed: {
 			label: function()
 			{
-				return VALORES[this.valor];
+				return VALORES[this.bloco.valor];
 			}
 		}
   }
@@ -64,6 +64,7 @@
 		coluna = null;
 		linha = null;
 		valor = 1;
+		lastInteraction = null;
 		
 		constructor()
 		{
@@ -78,6 +79,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	flex-direction: column;
 	width: 100%;
 	height: 100%;
 	border-radius: 5px;

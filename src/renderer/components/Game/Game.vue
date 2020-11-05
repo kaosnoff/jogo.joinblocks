@@ -9,7 +9,7 @@
 			<div class="blocos">
 				<block class="bloco" v-for="bloco in blocos" :key="bloco.id"
 					:data-coluna="bloco.coluna" :data-linha="bloco.linha"
-					:valor="bloco.valor"
+					:bloco="bloco"
 				>
 				</block>
 			</div>
@@ -21,14 +21,14 @@
 		<div id="hud">
 			<div class="next">
 				<block v-if="newBlock"
-					:valor="newBlock.valor"
+					:bloco="newBlock"
 				></block>
 			</div>
 			<div class="powers">
 				
 			</div>
 			<div class="tools">
-				
+				<p>Last lastInteraction: {{lastInteraction}}</p>
 			</div>
 		</div>
 	</div>
@@ -46,7 +46,7 @@
 		{
 			return {
 				minN: 10,
-				rangeN: 5,
+				rangeN: 2,
 				newBlock: null,
 				cols: [0,1,2,3,4],
 				rows: [
@@ -59,7 +59,8 @@
 					30,31,32,33,34
 				],
 				blocos: [],
-				grid: []
+				grid: [],
+				lastInteraction: 0
 			}
 		},
 		created: function()
@@ -81,15 +82,19 @@
 				let bloco = {...this.newBlock};
 				bloco.coluna = n;
 				bloco.linha = 7;
-				let blocosColuna = this.checaColuna(n);
+				let blocosColuna = this.getColuna(n);
 				this.createBlock();
+				this.blocos.push(bloco);
 				setTimeout(()=>
 					{
 						bloco.linha = blocosColuna.length;
-						console.log(bloco, blocosColuna);
+						console.log(bloco.linha);
+						this.checaVizinhos(bloco).then(vizinhos =>
+						{
+							this.checaTabuleiro();
+						})
 					},50
 				);
-				this.blocos.push(bloco);
 			},
 			createBlock()
 			{
@@ -99,10 +104,126 @@
 				
 				this.newBlock = bloco;
 			},
-			checaColuna(n)
+			getColuna(n)
 			{
 				let blocos = this.blocos.filter(bl => bl.coluna == n);
 				return blocos;
+			},
+			checaVizinhos(bloco)
+			{
+				return new Promise((resolve, reject) =>
+				{
+					let vizinhos = [];
+					let vizinho;
+					// Pega vizinho de baixo
+					if (bloco.linha > 0)
+					{
+						vizinho = this.blocos.find(bl => bl.coluna == (bloco.coluna) && bl.linha == (bloco.linha - 1));
+						if (vizinho && vizinho.valor == bloco.valor) 
+						{
+							vizinhos.push(vizinho);
+						}
+					}
+					if (vizinhos.length == 0 && bloco.linha > 6) return this.terminaJogo();
+					// Pega vizinho do lado esquerdo
+					if (bloco.coluna > 0)
+					{
+						vizinho = this.blocos.find(bl => bl.coluna == (bloco.coluna - 1) && bl.linha == (bloco.linha));
+						if (vizinho && vizinho.valor == bloco.valor) 
+						{
+							vizinhos.push(vizinho);
+						}
+					}
+					// Pega vizinho do lado direito
+					if (bloco.coluna < 4)
+					{
+						vizinho = this.blocos.find(bl => bl.coluna == (bloco.coluna + 1) && bl.linha == (bloco.linha));
+						if (vizinho && vizinho.valor == bloco.valor) 
+						{
+							vizinhos.push(vizinho);
+						}
+					}
+					// Pega vizinho de cima
+					if (bloco.linha < 7)
+					{
+						vizinho = this.blocos.find(bl => bl.coluna == (bloco.coluna) && bl.linha == (bloco.linha + 1));
+						if (vizinho && vizinho.valor == bloco.valor)
+						{
+							vizinhos.push(vizinho);
+						}
+					}
+					if (vizinhos.length > 0)
+					{
+						let valor = bloco.valor + vizinhos.length;
+						
+						for (let vizinho of vizinhos)
+						{
+							if (vizinho.coluna == (bloco.coluna))
+							{
+								if (vizinho.linha == (bloco.linha - 1))
+								{
+									//vizinho.linha += 1;
+									setTimeout(()=>{bloco.linha -= 1;},300);
+								}
+								else
+								{
+									vizinho.linha -= 1;
+								}
+							}
+							else if (vizinho.linha == (bloco.linha))
+							{
+								if (vizinho.coluna == (bloco.coluna - 1))
+								{
+									vizinho.coluna += 1;
+								}
+								else
+								{
+									vizinho.coluna -= 1;
+								}
+							}
+							setTimeout(
+								() => {
+									this.blocos = this.blocos.filter(b => b.id != vizinho.id);
+								},
+								250
+							)
+						}
+						
+						bloco.valor = valor;
+					}
+					resolve(vizinhos);
+				});
+			},
+			checaTabuleiro()
+			{
+				let items;
+				for (let i = 0; i < 4; i++)
+				{
+					items = this.getColuna(i);
+					if (!items || items.length < 1) continue;
+					let linhaAtual = 0;
+					for (let item of items)
+					{
+						console.log(item,item.linha, linhaAtual);
+						if (item.linha > linhaAtual)
+						{
+							item.linha = linhaAtual;
+						}
+						linhaAtual++;
+					}
+					for (let item in items)
+					{
+						this.checaVizinhos(item);
+					}
+				}
+			},
+			terminaJogo()
+			{
+				console.log('Final!');
+			},
+			limpaJogo()
+			{
+				this.blocos = [];
 			}
 		}
   }
@@ -189,7 +310,7 @@
 	position: relative;
 	display: grid;
 	margin: 20px 10vw;
-	border: 1px solid rgba(white,0.1);
+	padding-left: 11rem;
 	
 	@media all and (orientation: landscape) {
 		
@@ -209,6 +330,21 @@
 			//width: 64px;
 			//height: 64px;
 		}
+	}
+	
+	.powers, .tools {
+		padding: 0.2em;
+		margin: 0em 0em 1em;
+		min-height: 4.3em;
+		border: 2px solid rgba(white,0.25);
+		border-radius: 0.5em;
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-evenly;
+	}
+	.powers {
+	}
+	.tools {
 	}
 }
 </style>
